@@ -51,3 +51,9 @@ conversions. The checkmark types out ".com", and the rest are just the character
 To the side are 4 vertical buttons, the same size as the numeric, the top is the "world" to switch
 keyboards, below that is an 'abc/123' key which switches the primary letters to numbers, then a
 backspace, and at the bottom a newline.
+
+# Git commit style
+
+- Single-line summary at top (imperative mood, ~50 chars)
+- Blank line
+- Body paragraphs wrapped at 75 characters explaining the change
