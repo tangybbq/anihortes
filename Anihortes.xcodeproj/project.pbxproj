@@ -6,9 +6,48 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6114DFFE2F79C97C0022803C /* AnihortesKey.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6114DFF72F79C97C0022803C /* AnihortesKey.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		6114DFFC2F79C97C0022803C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6114DFDD2F79C8EA0022803C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6114DFF62F79C97C0022803C;
+			remoteInfo = AnihortesKey;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		6114E0032F79C97D0022803C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6114DFFE2F79C97C0022803C /* AnihortesKey.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		6114DFE52F79C8EA0022803C /* Anihortes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Anihortes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6114DFF72F79C97C0022803C /* AnihortesKey.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AnihortesKey.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6114DFFF2F79C97C0022803C /* Exceptions for "AnihortesKey" folder in "AnihortesKey" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6114DFF62F79C97C0022803C /* AnihortesKey */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6114DFE72F79C8EA0022803C /* Anihortes */ = {
@@ -16,10 +55,25 @@
 			path = Anihortes;
 			sourceTree = "<group>";
 		};
+		6114DFF82F79C97C0022803C /* AnihortesKey */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6114DFFF2F79C97C0022803C /* Exceptions for "AnihortesKey" folder in "AnihortesKey" target */,
+			);
+			path = AnihortesKey;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		6114DFE22F79C8EA0022803C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6114DFF42F79C97C0022803C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				6114DFE72F79C8EA0022803C /* Anihortes */,
+				6114DFF82F79C97C0022803C /* AnihortesKey */,
 				6114DFE62F79C8EA0022803C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				6114DFE52F79C8EA0022803C /* Anihortes.app */,
+				6114DFF72F79C97C0022803C /* AnihortesKey.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,10 +111,12 @@
 				6114DFE12F79C8EA0022803C /* Sources */,
 				6114DFE22F79C8EA0022803C /* Frameworks */,
 				6114DFE32F79C8EA0022803C /* Resources */,
+				6114E0032F79C97D0022803C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				6114DFFD2F79C97C0022803C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				6114DFE72F79C8EA0022803C /* Anihortes */,
@@ -69,6 +127,28 @@
 			productName = Anihortes;
 			productReference = 6114DFE52F79C8EA0022803C /* Anihortes.app */;
 			productType = "com.apple.product-type.application";
+		};
+		6114DFF62F79C97C0022803C /* AnihortesKey */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6114E0002F79C97D0022803C /* Build configuration list for PBXNativeTarget "AnihortesKey" */;
+			buildPhases = (
+				6114DFF32F79C97C0022803C /* Sources */,
+				6114DFF42F79C97C0022803C /* Frameworks */,
+				6114DFF52F79C97C0022803C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6114DFF82F79C97C0022803C /* AnihortesKey */,
+			);
+			name = AnihortesKey;
+			packageProductDependencies = (
+			);
+			productName = AnihortesKey;
+			productReference = 6114DFF72F79C97C0022803C /* AnihortesKey.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +161,9 @@
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					6114DFE42F79C8EA0022803C = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					6114DFF62F79C97C0022803C = {
 						CreatedOnToolsVersion = 26.4;
 					};
 				};
@@ -100,12 +183,20 @@
 			projectRoot = "";
 			targets = (
 				6114DFE42F79C8EA0022803C /* Anihortes */,
+				6114DFF62F79C97C0022803C /* AnihortesKey */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		6114DFE32F79C8EA0022803C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6114DFF52F79C97C0022803C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +213,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6114DFF32F79C97C0022803C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		6114DFFD2F79C97C0022803C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6114DFF62F79C97C0022803C /* AnihortesKey */;
+			targetProxy = 6114DFFC2F79C97C0022803C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6114DFEE2F79C8EB0022803C /* Debug */ = {
@@ -306,6 +412,60 @@
 			};
 			name = Release;
 		};
+		6114E0012F79C97D0022803C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AnihortesKey/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AnihortesKey;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.davidb.Anihortes.AnihortesKey;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6114E0022F79C97D0022803C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AnihortesKey/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AnihortesKey;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.davidb.Anihortes.AnihortesKey;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -323,6 +483,15 @@
 			buildConfigurations = (
 				6114DFF12F79C8EB0022803C /* Debug */,
 				6114DFF22F79C8EB0022803C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6114E0002F79C97D0022803C /* Build configuration list for PBXNativeTarget "AnihortesKey" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6114E0012F79C97D0022803C /* Debug */,
+				6114E0022F79C97D0022803C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
