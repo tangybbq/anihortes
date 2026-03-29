@@ -13,7 +13,9 @@
 - Replace the boilerplate in `KeyboardViewController` with a programmatic UIKit layout.
 - Create a 3x3 grid of key views, a full-width spacebar below, and a column of 4 side buttons (globe/world, abc/123, backspace, return) to the right.
 - Each key view shows the center character prominently, with small hint labels for the 8 surrounding characters (like MessagEase's visual hints).
-- Use Auto Layout to size keys proportionally and adapt to different screen widths.
+- **Keys must be square** (width = height). The keyboard is left-aligned by default — the 3x3 grid + side buttons won't fill the full screen width.
+- Key size is derived from the available keyboard height (minus spacing and spacebar). Side buttons column sits to the right of the grid.
+- Future: globe-swipe gesture will allow shifting the entire keyboard to the right side.
 
 ### 1.3 Handle tap to insert center character
 - Wire up tap gestures on each key view.
@@ -43,11 +45,23 @@
 - If the slot is a normal character, insert it.
 - If the slot is a special action, handle it (see Phase 3).
 
-### 2.3 Visual feedback during swipe
+### 2.3 Capital letter gestures
+Two gesture patterns produce uppercase letters, depending on whether the letter is a center (tap) or swipe character:
+
+- **Swipe-and-return (for swipe characters)**: Start on the key, swipe in the direction of the desired letter, then return back to the starting key before lifting. For example, to type capital "U": start on "o", swipe up (toward "u"), then drag back down to "o" and release. The out-and-back motion signals capitalization.
+
+- **Circular gesture (for center/tap characters)**: Start on the key, perform a circular looping gesture that leaves the key, covers neighboring keys (or virtual positions outside the grid), and returns to the starting key. This distinguishes a capital tap character from a plain tap. For example, to type capital "O": start on "o", drag in a loop through adjacent keys, and return to "o".
+
+Detection logic:
+- Track the full touch path, not just start/end displacement.
+- For swipe-and-return: detect that the touch moved significantly in a direction and then returned close to the origin. The swipe direction determines the letter; the return signals uppercase.
+- For circular: detect that the touch left the key, traveled a sufficient path length, and returned to the origin without a clear dominant linear direction.
+
+### 2.4 Visual feedback during swipe
 - On drag, highlight or animate the key to show which direction is being selected.
 - Show the candidate character in an enlarged preview (similar to iOS key magnification).
 
-**Milestone**: All ~80 characters/symbols are typeable via tap + swipe.
+**Milestone**: All ~80 characters/symbols are typeable via tap + swipe, including capitals.
 
 ---
 
