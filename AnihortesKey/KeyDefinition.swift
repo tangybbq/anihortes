@@ -45,7 +45,16 @@ struct KeyDefinition {
         case .dotCom: return "✓"
         case .tab: return "⇥"
         case .compose: return "C"
-        case .accent(let s): return s
+        case .accent(let s):
+            // Show readable form of combining characters
+            switch s {
+            case "\u{0300}": return "`"
+            case "\u{0301}": return "'"
+            case "\u{0302}": return "^"
+            case "\u{0303}": return "~"
+            case "\u{0308}": return "¨"
+            default: return s
+            }
         }
     }
 }
@@ -70,9 +79,9 @@ struct KeyMap {
             KeyDefinition(
                 center: .character("n"),
                 swipes: [
-                    .nw: .character("`"),
+                    .nw: .accent("\u{0300}"),  // combining grave
                     .n: .accent("\u{0302}"),  // combining circumflex
-                    .ne: .character("'"),
+                    .ne: .accent("\u{0301}"), // combining acute
                     .w: .character("+"),
                     .e: .character("!"),
                     .sw: .character("/"),
@@ -141,7 +150,7 @@ struct KeyMap {
             KeyDefinition(
                 center: .character("t"),
                 swipes: [
-                    .nw: .character("~"),
+                    .nw: .accent("\u{0303}"),  // combining tilde
                     .n: .accent("\u{0308}"),   // combining diaeresis
                     .ne: .character("y"),
                     .w: .character("<"),
@@ -155,7 +164,7 @@ struct KeyMap {
                 swipes: [
                     .nw: .character("\""),
                     .n: .character("w"),
-                    .ne: .character("'"),
+                    .ne: .accent("\u{0301}"), // combining acute
                     .e: .character("z"),
                     .sw: .character(","),
                     .s: .character("."),

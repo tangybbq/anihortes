@@ -355,11 +355,12 @@ class KeyboardViewController: UIInputViewController {
         switch lastAction {
         case .combined(let base, let accent, _):
             // Undo the combination: delete the combined character,
-            // re-insert the base character and accent as separate characters
+            // re-insert the base character and the accent as a standalone symbol
+            let literal = literalForCombining(accent)
             textDocumentProxy.deleteBackward()
             textDocumentProxy.insertText(base)
-            textDocumentProxy.insertText(accent)
-            lastAction = .accentLiteral(accent)
+            textDocumentProxy.insertText(literal)
+            lastAction = .accentLiteral(literal)
         default:
             textDocumentProxy.deleteBackward()
             lastAction = .none
@@ -431,10 +432,11 @@ class KeyboardViewController: UIInputViewController {
     /// Map combining characters to their standalone visible equivalents.
     private func literalForCombining(_ combining: String) -> String {
         switch combining {
-        case "\u{0308}": return "\u{00A8}"  // combining diaeresis → standalone diaeresis
-        case "\u{0302}": return "^"         // combining circumflex → caret
         case "\u{0300}": return "`"         // combining grave → backtick
-        case "\u{0301}": return "\u{00B4}"  // combining acute → standalone acute
+        case "\u{0301}": return "'"         // combining acute → apostrophe
+        case "\u{0302}": return "^"         // combining circumflex → caret
+        case "\u{0303}": return "~"         // combining tilde → tilde
+        case "\u{0308}": return "\u{00A8}"  // combining diaeresis → standalone diaeresis
         default: return combining
         }
     }
