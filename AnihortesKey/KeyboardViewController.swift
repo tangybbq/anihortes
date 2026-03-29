@@ -35,9 +35,9 @@ class KeyboardViewController: UIInputViewController {
         self.nextKeyboardButton.bottomAnchor.constraint(equalTo: self.view.bottomAnchor).isActive = true
     }
     
-    override func viewWillLayoutSubviews() {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         self.nextKeyboardButton.isHidden = !self.needsInputModeSwitchKey
-        super.viewWillLayoutSubviews()
     }
     
     override func textWillChange(_ textInput: UITextInput?) {
