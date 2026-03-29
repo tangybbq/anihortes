@@ -67,11 +67,11 @@ class KeyboardViewController: UIInputViewController {
         // Create key views
         for (rowIndex, rowDefs) in layout.enumerated() {
             var rowKeyViews: [KeyView] = []
-            for (colIndex, keyDef) in rowDefs.enumerated() {
+            for (_, keyDef) in rowDefs.enumerated() {
                 let kv = KeyView(definition: keyDef)
-                kv.tag = rowIndex * 10 + colIndex
-                let tap = UITapGestureRecognizer(target: self, action: #selector(keyTapped(_:)))
-                kv.addGestureRecognizer(tap)
+                kv.onGesture = { [weak self] keyView, result in
+                    self?.handleKeyGesture(keyView: keyView, result: result)
+                }
                 view.addSubview(kv)
                 rowKeyViews.append(kv)
             }
@@ -220,16 +220,41 @@ class KeyboardViewController: UIInputViewController {
         return button
     }
 
-    // MARK: - Actions
+    // MARK: - Gesture Handling
 
-    @objc private func keyTapped(_ gesture: UITapGestureRecognizer) {
-        guard let keyView = gesture.view as? KeyView else { return }
-        keyView.setPressed(true)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            keyView.setPressed(false)
+    private func handleKeyGesture(keyView: KeyView, result: KeyGestureResult) {
+        switch result {
+        case .tap:
+            performAction(keyView.definition.center)
+
+        case .swipe(let direction):
+            if let action = keyView.definition.swipes[direction] {
+                performAction(action)
+            }
+
+        case .swipeAndReturn(let direction):
+            // Capitalize the swipe character
+            if let action = keyView.definition.swipes[direction] {
+                performCapitalized(action)
+            }
+
+        case .circular:
+            // Capitalize the center character
+            performCapitalized(keyView.definition.center)
         }
-        performAction(keyView.definition.center)
     }
+
+    private func performCapitalized(_ action: KeyAction) {
+        switch action {
+        case .character(let s):
+            textDocumentProxy.insertText(s.uppercased())
+        default:
+            // Non-character actions don't have capitals; just perform normally
+            performAction(action)
+        }
+    }
+
+    // MARK: - Actions
 
     @objc private func spaceTapped() {
         textDocumentProxy.insertText(" ")
