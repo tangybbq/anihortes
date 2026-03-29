@@ -9,8 +9,9 @@ import UIKit
 enum KeyGestureResult {
     case tap                         // Short touch, no significant movement
     case swipe(SwipeDirection)       // Moved past threshold in a direction
-    case swipeAndReturn(SwipeDirection)  // Swiped out and came back (future: capital)
-    case circular                    // Looped gesture (future: capital of center char)
+    case swipeAndReturn(SwipeDirection)  // Swiped out and came back (capital)
+    case circular                    // Looped gesture (capital of center char)
+    case longPress                   // Held without moving (digit in alpha mode)
 }
 
 /// Callback when a gesture completes on a key.
@@ -30,6 +31,11 @@ class KeyView: UIView {
     private var touchStart: CGPoint = .zero
     private var touchMaxDistance: CGFloat = 0
     private var touchPath: [CGPoint] = []
+    private var longPressTimer: Timer?
+    private var didFireLongPress = false
+
+    /// How long to hold before long-press fires (seconds).
+    static let longPressDuration: TimeInterval = 0.4
 
     init(definition: KeyDefinition) {
         self.definition = definition
@@ -82,7 +88,20 @@ class KeyView: UIView {
         touchStart = point
         touchMaxDistance = 0
         touchPath = [point]
+        didFireLongPress = false
         setPressed(true)
+
+        // Start long-press timer
+        longPressTimer?.invalidate()
+        longPressTimer = Timer.scheduledTimer(withTimeInterval: Self.longPressDuration, repeats: false) {
+            [weak self] _ in
+            guard let self else { return }
+            // Only fire if finger hasn't moved significantly
+            if self.touchMaxDistance < self.bounds.width * self.dragThresholdFraction {
+                self.didFireLongPress = true
+                self.onGesture?(self, .longPress)
+            }
+        }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -93,6 +112,11 @@ class KeyView: UIView {
         if dist > touchMaxDistance {
             touchMaxDistance = dist
         }
+        // Cancel long-press if finger moved too far
+        if dist >= bounds.width * dragThresholdFraction {
+            longPressTimer?.invalidate()
+            longPressTimer = nil
+        }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -100,6 +124,11 @@ class KeyView: UIView {
         let endPoint = touch.location(in: self)
         touchPath.append(endPoint)
         setPressed(false)
+        longPressTimer?.invalidate()
+        longPressTimer = nil
+
+        // Don't fire another gesture if long-press already handled it
+        if didFireLongPress { return }
 
         let result = classifyGesture(endPoint: endPoint)
         onGesture?(self, result)
@@ -107,6 +136,8 @@ class KeyView: UIView {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         setPressed(false)
+        longPressTimer?.invalidate()
+        longPressTimer = nil
     }
 
     private func classifyGesture(endPoint: CGPoint) -> KeyGestureResult {
@@ -115,47 +146,32 @@ class KeyView: UIView {
         let dy = endPoint.y - touchStart.y
         let endDistance = distance(from: touchStart, to: endPoint)
 
-        // Did the touch ever move significantly?
         let didSwipeOut = touchMaxDistance >= threshold
 
         if !didSwipeOut {
-            // Never moved far enough — it's a tap
             return .tap
         }
 
-        // Touch moved out. Did it come back?
         let cameBack = endDistance < threshold
 
         if cameBack {
-            // Swipe-and-return: determine which direction the max excursion was in.
-            // Find the point farthest from start.
+            // Find the point farthest from start to determine swipe direction
             let farthestPoint = touchPath.max(by: {
                 distance(from: touchStart, to: $0) < distance(from: touchStart, to: $1)
             }) ?? endPoint
             let farDx = farthestPoint.x - touchStart.x
             let farDy = farthestPoint.y - touchStart.y
             let direction = directionFrom(dx: farDx, dy: farDy)
-
-            // Check if it's a circular gesture (for center char capital):
-            // The farthest point was in one direction, but the path covered substantial area.
-            // For now, treat swipe-and-return as capitalization of the swipe character.
             return .swipeAndReturn(direction)
         }
 
-        // Normal swipe: determine direction from start to end
         let direction = directionFrom(dx: dx, dy: dy)
         return .swipe(direction)
     }
 
-    /// Map a dx/dy vector to one of 8 cardinal/ordinal directions.
     private func directionFrom(dx: CGFloat, dy: CGFloat) -> SwipeDirection {
-        // atan2 gives angle in radians; note UIKit y-axis is flipped (down = positive)
-        let angle = atan2(dy, dx)  // range: -π to π
-        // Convert to 0...2π
+        let angle = atan2(dy, dx)
         let normalized = angle < 0 ? angle + 2 * .pi : angle
-
-        // Divide circle into 8 sectors of 45° each, offset by 22.5° so boundaries
-        // fall between directions
         let sector = Int((normalized + .pi / 8) / (.pi / 4)) % 8
 
         switch sector {

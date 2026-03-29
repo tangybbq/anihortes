@@ -12,7 +12,7 @@ class KeyboardViewController: UIInputViewController {
     private var keyViews: [[KeyView]] = []
     private var sideButtons: [UIButton] = []
     private var spaceBarView: UIView?
-    private var zeroKeyView: UIView?  // numeric mode: "0" key (left 2/3 of bottom row)
+    private var zeroKeyView: UIView?
     private var isNumericMode = false
 
     // Side button references
@@ -23,6 +23,18 @@ class KeyboardViewController: UIInputViewController {
 
     // Backspace repeat timer
     private var backspaceTimer: Timer?
+
+    // Shift state: nil = use auto-cap, true = force upper, false = force lower
+    private var shiftOverride: Bool? = nil
+
+    // Track the last action for accent-combining undo
+    private enum LastAction {
+        case none
+        case character(String)          // plain character inserted
+        case combined(base: String, accent: String, result: String)  // accent was combined
+        case accentLiteral(String)      // accent inserted as literal (didn't combine)
+    }
+    private var lastAction: LastAction = .none
 
     private let keySpacing: CGFloat = 4
     private let keyboardHeight: CGFloat = 260
@@ -54,18 +66,45 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
-    // MARK: - Build Keyboard (create views, no positioning yet)
+    // MARK: - Auto-capitalization
+
+    /// Determine if the next character should be capitalized.
+    private var shouldAutoCapitalize: Bool {
+        // If user explicitly set shift, use that
+        if let override = shiftOverride { return override }
+
+        // Auto-capitalize at start of input or after ". "
+        guard let context = textDocumentProxy.documentContextBeforeInput else {
+            return true  // empty document = start of input
+        }
+        if context.isEmpty { return true }
+
+        // After period followed by space(s)
+        let trimmed = context.replacingOccurrences(of: " ", with: "", options: .backwards)
+        if trimmed.isEmpty { return true }
+        if trimmed.last == "." { return true }
+
+        return false
+    }
+
+    /// Apply case to a character string based on current shift/auto-cap state.
+    private func applyCase(_ s: String) -> String {
+        let result = shouldAutoCapitalize ? s.uppercased() : s
+        // Consume one-shot shift override after use
+        shiftOverride = nil
+        return result
+    }
+
+    // MARK: - Build Keyboard
 
     private func buildKeyboard() {
-        // Clear existing views
         view.subviews.forEach { $0.removeFromSuperview() }
         keyViews.removeAll()
         sideButtons.removeAll()
 
         let layout = isNumericMode ? KeyMap.numeric : KeyMap.alpha
 
-        // Create key views
-        for (rowIndex, rowDefs) in layout.enumerated() {
+        for (_, rowDefs) in layout.enumerated() {
             var rowKeyViews: [KeyView] = []
             for (_, keyDef) in rowDefs.enumerated() {
                 let kv = KeyView(definition: keyDef)
@@ -78,12 +117,11 @@ class KeyboardViewController: UIInputViewController {
             keyViews.append(rowKeyViews)
         }
 
-        // Create spacebar (and zero key in numeric mode)
+        // Spacebar and zero key
         zeroKeyView?.removeFromSuperview()
         zeroKeyView = nil
 
         if isNumericMode {
-            // Numeric: left 2/3 = "0", right 1/3 = space
             let zeroView = UIView()
             zeroView.backgroundColor = .white
             zeroView.layer.cornerRadius = 6
@@ -115,7 +153,7 @@ class KeyboardViewController: UIInputViewController {
         view.addSubview(bar)
         spaceBarView = bar
 
-        // Create side buttons
+        // Side buttons
         globeButton = makeSideButton(systemImage: "globe",
                                      action: #selector(handleInputModeList(from:with:)),
                                      forEvents: .allTouchEvents)
@@ -133,11 +171,10 @@ class KeyboardViewController: UIInputViewController {
         sideButtons = [globeButton, modeButton, backspaceButton, returnButton]
         for b in sideButtons { view.addSubview(b) }
 
-        // Re-apply globe visibility (lost when views are recreated on mode toggle)
         globeButton.isHidden = !needsInputModeSwitchKey
     }
 
-    // MARK: - Layout (frame-based, computed from available height)
+    // MARK: - Layout
 
     private func layoutKeys() {
         let totalHeight = view.bounds.height
@@ -145,10 +182,9 @@ class KeyboardViewController: UIInputViewController {
         guard totalHeight > 0, totalWidth > 0 else { return }
 
         let padding: CGFloat = 2
-        let numKeyRows: CGFloat = 4  // 3 rows of keys + 1 spacebar row
+        let numKeyRows: CGFloat = 4
         let numSideButtons: CGFloat = 4
 
-        // Key size: square, 4 rows fit in available height
         let availableHeight = totalHeight - 2 * padding
         let keySize = (availableHeight - (numKeyRows - 1) * keySpacing) / numKeyRows
 
@@ -158,7 +194,6 @@ class KeyboardViewController: UIInputViewController {
         let gridLeft = padding
         let gridTop = padding
 
-        // Layout 3x3 key grid
         for (rowIndex, row) in keyViews.enumerated() {
             for (colIndex, kv) in row.enumerated() {
                 let x = gridLeft + CGFloat(colIndex) * (keySize + keySpacing)
@@ -167,22 +202,18 @@ class KeyboardViewController: UIInputViewController {
             }
         }
 
-        // Layout bottom row (row index 3): spacebar, or 0+space in numeric mode
         let bottomY = gridTop + 3 * (keySize + keySpacing)
 
         if isNumericMode, let zeroView = zeroKeyView {
-            // "0" takes left 2 key widths + 1 spacing, space takes remaining 1 key width
             let zeroWidth = 2 * keySize + keySpacing
             zeroView.frame = CGRect(x: gridLeft, y: bottomY, width: zeroWidth, height: keySize)
             if let label = zeroView.subviews.first as? UILabel {
                 label.frame = zeroView.bounds
             }
             let spaceLeft = gridLeft + zeroWidth + keySpacing
-            let spaceWidth = keySize
             spaceBarView?.frame = CGRect(x: spaceLeft, y: bottomY,
-                                         width: spaceWidth, height: keySize)
+                                         width: keySize, height: keySize)
         } else {
-            // Alpha mode: spacebar spans full grid width
             spaceBarView?.frame = CGRect(x: gridLeft, y: bottomY,
                                          width: gridWidth, height: keySize)
         }
@@ -190,7 +221,6 @@ class KeyboardViewController: UIInputViewController {
             label.frame = spaceBarView?.bounds ?? .zero
         }
 
-        // Layout side buttons: right of grid, spanning full height
         let sideLeft = gridLeft + gridWidth + keySpacing
         let sideHeight = (availableHeight - (numSideButtons - 1) * keySpacing) / numSideButtons
 
@@ -233,23 +263,30 @@ class KeyboardViewController: UIInputViewController {
             }
 
         case .swipeAndReturn(let direction):
-            // Capitalize the swipe character
             if let action = keyView.definition.swipes[direction] {
                 performCapitalized(action)
             }
 
         case .circular:
-            // Capitalize the center character
             performCapitalized(keyView.definition.center)
+
+        case .longPress:
+            // In alpha mode, long-press types the underlying digit
+            if !isNumericMode, let digit = keyView.definition.digit {
+                textDocumentProxy.insertText(digit)
+                lastAction = .character(digit)
+            }
         }
     }
 
     private func performCapitalized(_ action: KeyAction) {
         switch action {
         case .character(let s):
-            textDocumentProxy.insertText(s.uppercased())
+            let upper = s.uppercased()
+            textDocumentProxy.insertText(upper)
+            lastAction = .character(upper)
+            shiftOverride = nil
         default:
-            // Non-character actions don't have capitals; just perform normally
             performAction(action)
         }
     }
@@ -258,10 +295,12 @@ class KeyboardViewController: UIInputViewController {
 
     @objc private func spaceTapped() {
         textDocumentProxy.insertText(" ")
+        lastAction = .character(" ")
     }
 
     @objc private func zeroTapped() {
         textDocumentProxy.insertText("0")
+        lastAction = .character("0")
     }
 
     @objc private func toggleMode() {
@@ -271,7 +310,7 @@ class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func backspaceTapped() {
-        textDocumentProxy.deleteBackward()
+        handleBackspace()
     }
 
     @objc private func backspaceLongPress(_ gesture: UILongPressGestureRecognizer) {
@@ -280,6 +319,7 @@ class KeyboardViewController: UIInputViewController {
             backspaceTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 self?.textDocumentProxy.deleteBackward()
             }
+            lastAction = .none
         case .ended, .cancelled:
             backspaceTimer?.invalidate()
             backspaceTimer = nil
@@ -290,22 +330,100 @@ class KeyboardViewController: UIInputViewController {
 
     @objc private func returnTapped() {
         textDocumentProxy.insertText("\n")
+        lastAction = .character("\n")
+    }
+
+    /// Handle backspace with accent-combining undo.
+    private func handleBackspace() {
+        switch lastAction {
+        case .combined(let base, let accent, _):
+            // Undo the combination: delete the combined character,
+            // re-insert the base character and accent as separate characters
+            textDocumentProxy.deleteBackward()
+            textDocumentProxy.insertText(base)
+            textDocumentProxy.insertText(accent)
+            lastAction = .accentLiteral(accent)
+        default:
+            textDocumentProxy.deleteBackward()
+            lastAction = .none
+        }
     }
 
     private func performAction(_ action: KeyAction) {
         switch action {
         case .character(let s):
-            textDocumentProxy.insertText(s)
+            let output = isLetter(s) ? applyCase(s) : s
+            textDocumentProxy.insertText(output)
+            lastAction = .character(output)
+
         case .tab:
             textDocumentProxy.insertText("\t")
+            lastAction = .character("\t")
+
         case .dotCom:
             textDocumentProxy.insertText(".com")
-        case .shiftUp, .shiftDown:
-            break // Phase 3
+            lastAction = .character(".com")
+
+        case .shiftUp:
+            shiftOverride = true
+
+        case .shiftDown:
+            shiftOverride = false
+
         case .compose:
             break // Future
-        case .accent:
-            break // Phase 3
+
+        case .accent(let combiningChar):
+            applyAccent(combiningChar)
         }
+    }
+
+    // MARK: - Accent Combining
+
+    /// Try to combine the accent with the previous character. If that produces
+    /// a valid precomposed character, replace it. Otherwise insert literally.
+    private func applyAccent(_ combiningChar: String) {
+        // Get the character before the cursor
+        guard let context = textDocumentProxy.documentContextBeforeInput,
+              let lastChar = context.last else {
+            // Nothing to combine with — insert accent literally
+            textDocumentProxy.insertText(combiningChar)
+            lastAction = .accentLiteral(combiningChar)
+            return
+        }
+
+        let base = String(lastChar)
+        // Try combining: base + combining character, then normalize to NFC
+        let combined = (base + combiningChar).precomposedStringWithCanonicalMapping
+
+        // If NFC normalization produced a single character, the combination is valid
+        if combined.count == 1 && combined != base {
+            // Replace: delete the base, insert the combined form
+            textDocumentProxy.deleteBackward()
+            textDocumentProxy.insertText(combined)
+            lastAction = .combined(base: base, accent: combiningChar, result: combined)
+        } else {
+            // No valid combination — insert the accent as a literal character
+            // Use a visible representation instead of the combining mark
+            let literal = literalForCombining(combiningChar)
+            textDocumentProxy.insertText(literal)
+            lastAction = .accentLiteral(literal)
+        }
+    }
+
+    /// Map combining characters to their standalone visible equivalents.
+    private func literalForCombining(_ combining: String) -> String {
+        switch combining {
+        case "\u{0308}": return "\u{00A8}"  // combining diaeresis → standalone diaeresis
+        case "\u{0302}": return "^"         // combining circumflex → caret
+        case "\u{0300}": return "`"         // combining grave → backtick
+        case "\u{0301}": return "\u{00B4}"  // combining acute → standalone acute
+        default: return combining
+        }
+    }
+
+    private func isLetter(_ s: String) -> Bool {
+        guard let scalar = s.unicodeScalars.first else { return false }
+        return CharacterSet.letters.contains(scalar)
     }
 }
