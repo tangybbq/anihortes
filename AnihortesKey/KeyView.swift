@@ -251,6 +251,24 @@ class KeyView: UIView {
         }
     }
 
+    /// Update all letter labels to show uppercase or lowercase.
+    func updateCase(uppercase: Bool) {
+        let transform: (String) -> String = uppercase
+            ? { $0.uppercased() }
+            : { $0.lowercased() }
+
+        if let text = centerLabel.text, text.rangeOfCharacter(from: .letters) != nil {
+            centerLabel.text = transform(text)
+        }
+        for (direction, label) in hintLabels {
+            guard let text = label.text, text.rangeOfCharacter(from: .letters) != nil else { continue }
+            // Don't transform special action labels (⇧, ⇩, ✓, ⇥, C)
+            if case .character = definition.swipes[direction] {
+                label.text = transform(text)
+            }
+        }
+    }
+
     func setPressed(_ pressed: Bool) {
         UIView.animate(withDuration: 0.05) {
             self.transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity

@@ -64,6 +64,7 @@ class KeyboardViewController: UIInputViewController {
         for row in keyViews {
             for kv in row { kv.updateAppearance(isDark: isDark) }
         }
+        updateKeyLabelsCase()
     }
 
     // MARK: - Auto-capitalization
@@ -93,6 +94,15 @@ class KeyboardViewController: UIInputViewController {
         // Consume one-shot shift override after use
         shiftOverride = nil
         return result
+    }
+
+    /// Update all key labels to reflect current caps state.
+    private func updateKeyLabelsCase() {
+        guard !isNumericMode else { return }
+        let upper = shouldAutoCapitalize
+        for row in keyViews {
+            for kv in row { kv.updateCase(uppercase: upper) }
+        }
     }
 
     // MARK: - Build Keyboard
@@ -171,7 +181,11 @@ class KeyboardViewController: UIInputViewController {
         sideButtons = [globeButton, modeButton, backspaceButton, returnButton]
         for b in sideButtons { view.addSubview(b) }
 
-        globeButton.isHidden = !needsInputModeSwitchKey
+        // Don't check needsInputModeSwitchKey here — it's unreliable before
+        // the host connection is established. Hide by default; viewDidAppear
+        // will show it if needed.
+        globeButton.isHidden = true
+        updateKeyLabelsCase()
     }
 
     // MARK: - Layout
@@ -271,12 +285,12 @@ class KeyboardViewController: UIInputViewController {
             performCapitalized(keyView.definition.center)
 
         case .longPress:
-            // In alpha mode, long-press types the underlying digit
             if !isNumericMode, let digit = keyView.definition.digit {
                 textDocumentProxy.insertText(digit)
                 lastAction = .character(digit)
             }
         }
+        updateKeyLabelsCase()
     }
 
     private func performCapitalized(_ action: KeyAction) {
@@ -296,6 +310,7 @@ class KeyboardViewController: UIInputViewController {
     @objc private func spaceTapped() {
         textDocumentProxy.insertText(" ")
         lastAction = .character(" ")
+        updateKeyLabelsCase()
     }
 
     @objc private func zeroTapped() {
@@ -311,6 +326,7 @@ class KeyboardViewController: UIInputViewController {
 
     @objc private func backspaceTapped() {
         handleBackspace()
+        updateKeyLabelsCase()
     }
 
     @objc private func backspaceLongPress(_ gesture: UILongPressGestureRecognizer) {
@@ -331,6 +347,7 @@ class KeyboardViewController: UIInputViewController {
     @objc private func returnTapped() {
         textDocumentProxy.insertText("\n")
         lastAction = .character("\n")
+        updateKeyLabelsCase()
     }
 
     /// Handle backspace with accent-combining undo.
