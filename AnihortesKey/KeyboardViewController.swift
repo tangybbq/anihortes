@@ -37,7 +37,7 @@ class KeyboardViewController: UIInputViewController {
     private var lastAction: LastAction = .none
 
     private let keySpacing: CGFloat = 4
-    private let keyboardHeight: CGFloat = 260
+    private let keyboardHeight: CGFloat = 300
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,6 +62,11 @@ class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         refreshAppearance()
+    }
+
+    override func selectionDidChange(_ textInput: UITextInput?) {
+        // Cursor moved — update caps state for new position
+        updateKeyLabelsCase()
     }
 
     private func refreshAppearance() {
@@ -102,16 +107,18 @@ class KeyboardViewController: UIInputViewController {
         // If user explicitly set shift, use that
         if let override = shiftOverride { return override }
 
-        // Auto-capitalize at start of input or after ". "
         guard let context = textDocumentProxy.documentContextBeforeInput else {
             return true  // empty document = start of input
         }
         if context.isEmpty { return true }
 
-        // After period followed by space(s)
-        let trimmed = context.replacingOccurrences(of: " ", with: "", options: .backwards)
-        if trimmed.isEmpty { return true }
-        if trimmed.last == "." { return true }
+        // After a newline, always capitalize
+        if context.last == "\n" { return true }
+
+        // After sentence-ending punctuation followed by optional spaces
+        let stripped = String(context.reversed().drop(while: { $0 == " " || $0 == "\t" }).reversed())
+        if stripped.isEmpty { return true }
+        if let last = stripped.last, ".?!".contains(last) { return true }
 
         return false
     }

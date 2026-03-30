@@ -181,12 +181,40 @@ class KeyView: UIView {
             }) ?? endPoint
             let farDx = farthestPoint.x - touchStart.x
             let farDy = farthestPoint.y - touchStart.y
+
+            // Distinguish circular (capital of center) from swipe-and-return
+            // (capital of swipe char). A circular gesture visits multiple
+            // distinct directions; a swipe-and-return stays mostly on one axis.
+            if isCircularPath() {
+                return .circular
+            }
+
             let direction = directionFrom(dx: farDx, dy: farDy)
             return .swipeAndReturn(direction)
         }
 
         let direction = directionFrom(dx: dx, dy: dy)
         return .swipe(direction)
+    }
+
+    /// Detect a circular/looping gesture by checking if the path covers
+    /// at least 3 distinct directional quadrants relative to the start point.
+    /// A linear swipe-and-return only covers 1-2 opposing quadrants.
+    private func isCircularPath() -> Bool {
+        let threshold = bounds.width * dragThresholdFraction
+        var quadrants: Set<Int> = []
+
+        for point in touchPath {
+            let dist = distance(from: touchStart, to: point)
+            guard dist >= threshold else { continue }
+            let dx = point.x - touchStart.x
+            let dy = point.y - touchStart.y
+            // Map to 4 quadrants: 0=NE, 1=SE, 2=SW, 3=NW
+            let q = (dx >= 0 ? 0 : 2) + (dy >= 0 ? 1 : 0)
+            quadrants.insert(q)
+        }
+
+        return quadrants.count >= 3
     }
 
     private func directionFrom(dx: CGFloat, dy: CGFloat) -> SwipeDirection {
