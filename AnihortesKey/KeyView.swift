@@ -35,6 +35,10 @@ class KeyView: UIView {
     private var longPressTimer: Timer?
     private var didFireLongPress = false
 
+    // Swipe preview
+    private var previewLabel: UILabel?
+    private var currentSwipeDirection: SwipeDirection?
+
     /// How long to hold before long-press fires (seconds).
     static let longPressDuration: TimeInterval = 0.4
 
@@ -49,7 +53,7 @@ class KeyView: UIView {
     }
 
     private func setupView() {
-        backgroundColor = UIColor.systemBackground
+        backgroundColor = normalColor
         layer.cornerRadius = 6
         clipsToBounds = true
         isUserInteractionEnabled = true
@@ -114,9 +118,23 @@ class KeyView: UIView {
             touchMaxDistance = dist
         }
         // Cancel long-press if finger moved too far
-        if dist >= bounds.width * dragThresholdFraction {
+        let threshold = bounds.width * dragThresholdFraction
+        if dist >= threshold {
             longPressTimer?.invalidate()
             longPressTimer = nil
+        }
+
+        // Update swipe preview
+        if dist >= threshold {
+            let dx = point.x - touchStart.x
+            let dy = point.y - touchStart.y
+            let dir = directionFrom(dx: dx, dy: dy)
+            if dir != currentSwipeDirection {
+                currentSwipeDirection = dir
+                showSwipePreview(direction: dir)
+            }
+        } else {
+            hideSwipePreview()
         }
     }
 
@@ -125,10 +143,10 @@ class KeyView: UIView {
         let endPoint = touch.location(in: self)
         touchPath.append(endPoint)
         setPressed(false)
+        hideSwipePreview()
         longPressTimer?.invalidate()
         longPressTimer = nil
 
-        // Don't fire another gesture if long-press already handled it
         if didFireLongPress { return }
 
         let result = classifyGesture(endPoint: endPoint)
@@ -137,6 +155,7 @@ class KeyView: UIView {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         setPressed(false)
+        hideSwipePreview()
         longPressTimer?.invalidate()
         longPressTimer = nil
     }
@@ -282,5 +301,44 @@ class KeyView: UIView {
     func setPressed(_ pressed: Bool) {
         transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity
         backgroundColor = pressed ? pressedColor : normalColor
+    }
+
+    // MARK: - Swipe Preview
+
+    private func showSwipePreview(direction: SwipeDirection) {
+        let text = definition.label(for: direction)
+        guard !text.isEmpty else {
+            hideSwipePreview()
+            return
+        }
+
+        if previewLabel == nil {
+            let label = UILabel()
+            label.font = UIFont.systemFont(ofSize: 32, weight: .medium)
+            label.textAlignment = .center
+            label.backgroundColor = isDark ? UIColor(white: 0.5, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            label.textColor = isDark ? .white : .black
+            label.layer.cornerRadius = 6
+            label.clipsToBounds = true
+            // Preview floats above the key via superview
+            superview?.addSubview(label)
+            previewLabel = label
+        }
+
+        previewLabel?.text = text
+        let previewSize: CGFloat = bounds.width * 0.7
+        let centerInSuperview = CGPoint(x: frame.midX, y: frame.minY - previewSize / 2 - 4)
+        previewLabel?.frame = CGRect(
+            x: centerInSuperview.x - previewSize / 2,
+            y: centerInSuperview.y - previewSize / 2,
+            width: previewSize,
+            height: previewSize
+        )
+    }
+
+    private func hideSwipePreview() {
+        previewLabel?.removeFromSuperview()
+        previewLabel = nil
+        currentSwipeDirection = nil
     }
 }

@@ -57,14 +57,42 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         globeButton.isHidden = !needsInputModeSwitchKey
+        refreshAppearance()
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
+        refreshAppearance()
+    }
+
+    private func refreshAppearance() {
         let isDark = textDocumentProxy.keyboardAppearance == .dark
         for row in keyViews {
             for kv in row { kv.updateAppearance(isDark: isDark) }
         }
+        updateBarAppearance(isDark: isDark)
         updateKeyLabelsCase()
+    }
+
+    private func updateBarAppearance(isDark: Bool) {
+        let bg = isDark ? UIColor(white: 0.35, alpha: 1) : UIColor.white
+        let textColor = isDark ? UIColor.white : UIColor.black
+        let secondaryText = isDark ? UIColor(white: 0.75, alpha: 1) : UIColor.secondaryLabel
+
+        spaceBarView?.backgroundColor = bg
+        if let label = spaceBarView?.subviews.first as? UILabel {
+            label.textColor = secondaryText
+        }
+        zeroKeyView?.backgroundColor = bg
+        if let label = zeroKeyView?.subviews.first as? UILabel {
+            label.textColor = textColor
+        }
+
+        let buttonBg = isDark ? UIColor(white: 0.25, alpha: 1) : UIColor(white: 0.75, alpha: 1)
+        let buttonTint = isDark ? UIColor.white : UIColor.label
+        for button in sideButtons {
+            button.backgroundColor = buttonBg
+            button.tintColor = buttonTint
+        }
     }
 
     // MARK: - Auto-capitalization
@@ -196,10 +224,11 @@ class KeyboardViewController: UIInputViewController {
         guard totalHeight > 0, totalWidth > 0 else { return }
 
         let padding: CGFloat = 2
+        let bottomPadding = max(padding, view.safeAreaInsets.bottom)
         let numKeyRows: CGFloat = 4
         let numSideButtons: CGFloat = 4
 
-        let availableHeight = totalHeight - 2 * padding
+        let availableHeight = totalHeight - padding - bottomPadding
         let keySize = (availableHeight - (numKeyRows - 1) * keySpacing) / numKeyRows
 
         let gridWidth = 3 * keySize + 2 * keySpacing
@@ -322,6 +351,7 @@ class KeyboardViewController: UIInputViewController {
         isNumericMode.toggle()
         buildKeyboard()
         layoutKeys()
+        refreshAppearance()
     }
 
     @objc private func backspaceTapped() {
