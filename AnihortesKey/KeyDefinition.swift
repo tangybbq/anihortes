@@ -187,25 +187,28 @@ struct KeyMap {
         ],
     ]
 
-    /// Numeric mode keys: 1-9 in a 3x3 grid.
-    static let numeric: [[KeyDefinition]] = [
-        [
-            KeyDefinition(center: .character("1"), swipes: [:], digit: nil),
-            KeyDefinition(center: .character("2"), swipes: [:], digit: nil),
-            KeyDefinition(center: .character("3"), swipes: [:], digit: nil),
-        ],
-        [
-            KeyDefinition(center: .character("4"), swipes: [:], digit: nil),
-            KeyDefinition(center: .character("5"), swipes: [:], digit: nil),
-            KeyDefinition(center: .character("6"), swipes: [:], digit: nil),
-        ],
-        [
-            KeyDefinition(center: .character("7"), swipes: [:], digit: nil),
-            KeyDefinition(center: .character("8"), swipes: [:], digit: nil),
-            KeyDefinition(center: .character("9"), swipes: [:], digit: nil),
-        ],
-    ]
-
-    /// The bottom row "0" key for numeric mode.
-    static let zeroKey = KeyDefinition(center: .character("0"), swipes: [:], digit: nil)
+    /// Numeric mode keys: 1-9 with punctuation swipes carried over from alpha.
+    /// Letters are filtered out; only symbols, accents, and special actions remain.
+    static let numeric: [[KeyDefinition]] = {
+        alpha.enumerated().map { (rowIndex, row) in
+            row.enumerated().map { (colIndex, alphaDef) in
+                let digit = "\(rowIndex * 3 + colIndex + 1)"
+                let punctuationSwipes = alphaDef.swipes.filter { _, action in
+                    switch action {
+                    case .character(let s):
+                        // Keep if it's not a letter
+                        guard let scalar = s.unicodeScalars.first else { return true }
+                        return !CharacterSet.letters.contains(scalar)
+                    case .accent, .tab, .dotCom:
+                        return true
+                    case .shiftUp, .shiftDown, .compose:
+                        return false
+                    }
+                }
+                return KeyDefinition(center: .character(digit),
+                                     swipes: punctuationSwipes,
+                                     digit: nil)
+            }
+        }
+    }()
 }

@@ -26,6 +26,7 @@ class KeyView: UIView {
 
     private let centerLabel = UILabel()
     private var hintLabels: [SwipeDirection: UILabel] = [:]
+    private var isDark = false
 
     // Touch tracking
     private var touchStart: CGPoint = .zero
@@ -244,11 +245,20 @@ class KeyView: UIView {
     // MARK: - Appearance
 
     func updateAppearance(isDark: Bool) {
-        backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1) : UIColor.white
+        self.isDark = isDark
+        backgroundColor = normalColor
         centerLabel.textColor = isDark ? .white : .black
         for (_, label) in hintLabels {
             label.textColor = isDark ? UIColor(white: 0.75, alpha: 1) : .secondaryLabel
         }
+    }
+
+    private var normalColor: UIColor {
+        isDark ? UIColor(white: 0.35, alpha: 1) : UIColor.white
+    }
+
+    private var pressedColor: UIColor {
+        isDark ? UIColor(white: 0.45, alpha: 1) : UIColor(white: 0.88, alpha: 1)
     }
 
     /// Update all letter labels to show uppercase or lowercase.
@@ -270,15 +280,7 @@ class KeyView: UIView {
     }
 
     func setPressed(_ pressed: Bool) {
-        UIView.animate(withDuration: 0.05) {
-            self.transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity
-            self.backgroundColor = pressed
-                ? (self.traitCollection.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.45, alpha: 1)
-                    : UIColor(white: 0.88, alpha: 1))
-                : (self.traitCollection.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.35, alpha: 1)
-                    : UIColor.white)
-        }
+        transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity
+        backgroundColor = pressed ? pressedColor : normalColor
     }
 }
