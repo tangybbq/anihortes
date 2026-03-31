@@ -172,6 +172,14 @@ class KeyView: UIView {
             return .tap
         }
 
+        // Check for circular gesture first — a circle may end somewhat far
+        // from start (finger doesn't land perfectly), so use a generous
+        // return radius. The angular accumulation itself ensures the path
+        // actually looped.
+        if isCircularPath() {
+            return .circular
+        }
+
         let cameBack = endDistance < threshold
 
         if cameBack {
@@ -182,13 +190,6 @@ class KeyView: UIView {
             let farDx = farthestPoint.x - touchStart.x
             let farDy = farthestPoint.y - touchStart.y
 
-            // Distinguish circular (capital of center) from swipe-and-return
-            // (capital of swipe char). A circular gesture visits multiple
-            // distinct directions; a swipe-and-return stays mostly on one axis.
-            if isCircularPath() {
-                return .circular
-            }
-
             let direction = directionFrom(dx: farDx, dy: farDy)
             return .swipeAndReturn(direction)
         }
@@ -197,24 +198,40 @@ class KeyView: UIView {
         return .swipe(direction)
     }
 
-    /// Detect a circular/looping gesture by checking if the path covers
-    /// at least 3 distinct directional quadrants relative to the start point.
-    /// A linear swipe-and-return only covers 1-2 opposing quadrants.
+    /// Detect a circular gesture by accumulating the total angular change
+    /// along the touch path. A full circle accumulates ~2π (360°) of
+    /// consistent turning; a swipe-and-return reverses direction and
+    /// accumulates very little net angle.
     private func isCircularPath() -> Bool {
-        let threshold = bounds.width * dragThresholdFraction
-        var quadrants: Set<Int> = []
-
+        // Filter to points with enough spacing to give meaningful direction
+        // vectors, but keep the spacing small so we don't lose the curve.
+        let minStep: CGFloat = 3.0  // points (about 1mm on retina)
+        var filtered: [CGPoint] = []
         for point in touchPath {
-            let dist = distance(from: touchStart, to: point)
-            guard dist >= threshold else { continue }
-            let dx = point.x - touchStart.x
-            let dy = point.y - touchStart.y
-            // Map to 4 quadrants: 0=NE, 1=SE, 2=SW, 3=NW
-            let q = (dx >= 0 ? 0 : 2) + (dy >= 0 ? 1 : 0)
-            quadrants.insert(q)
+            if let last = filtered.last {
+                guard distance(from: last, to: point) >= minStep else { continue }
+            }
+            filtered.append(point)
+        }
+        guard filtered.count >= 4 else { return false }
+
+        var totalAngle: CGFloat = 0
+        for i in 1..<(filtered.count - 1) {
+            let dx1 = filtered[i].x - filtered[i - 1].x
+            let dy1 = filtered[i].y - filtered[i - 1].y
+            let dx2 = filtered[i + 1].x - filtered[i].x
+            let dy2 = filtered[i + 1].y - filtered[i].y
+            let cross = dx1 * dy2 - dy1 * dx2
+            let dot = dx1 * dx2 + dy1 * dy2
+            let angle = atan2(cross, dot)
+            totalAngle += angle
         }
 
-        return quadrants.count >= 3
+        // A full circle is 2π (~6.28). Require at least 240° (~4π/3) of
+        // consistent turning in either direction. This accommodates quick,
+        // imperfect circles while still rejecting linear swipe-and-returns
+        // (which accumulate near 0).
+        return abs(totalAngle) >= 4 * .pi / 3
     }
 
     private func directionFrom(dx: CGFloat, dy: CGFloat) -> SwipeDirection {
