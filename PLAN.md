@@ -164,7 +164,24 @@ Detection logic:
 
 ---
 
-## Implementation Order Summary
+## Open Design: Accent Combining
+
+**Problem**: The accent keys (grave, acute, circumflex, tilde, diaeresis) currently map to combining Unicode characters. Naively combining with the previous character breaks common English punctuation — e.g., the acute accent key doubles as the apostrophe, so typing "don't" produces "dón't" instead. Similarly "I'm", "it's", etc.
+
+**Current state**: Combining is disabled; accents always insert their literal character (apostrophe, backtick, caret, tilde, diaeresis). The combining code and backspace-undo logic remain in place but are bypassed.
+
+**Design questions to resolve**:
+- Should combining require an explicit user action (e.g., accent key *then* base character, rather than modifying the character already typed)?
+- Should combining be a mode/toggle that the user enables when typing in a language that uses accents?
+- Could a double-tap or long-press on the accent key trigger combining, while a normal swipe inserts the literal?
+- How did MessagEase handle this? (Research needed.)
+- What is the least-friction approach for users who rarely need accents but still want them accessible?
+
+**Goal**: Find an approach where apostrophes, carets, tildes, etc. work naturally for English, while accented characters remain reachable without a complex mode switch.
+
+---
+
+
 
 | Step | What | Depends On |
 |------|------|------------|

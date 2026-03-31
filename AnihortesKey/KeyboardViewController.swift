@@ -435,35 +435,14 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Accent Combining
 
-    /// Try to combine the accent with the previous character. If that produces
-    /// a valid precomposed character, replace it. Otherwise insert literally.
+    /// Insert the accent as its literal character. Combining with the previous
+    /// character is disabled for now — it interferes with common English
+    /// punctuation (e.g., apostrophes in "don't", "I'm"). See PLAN.md for
+    /// the design work needed to make combining usable.
     private func applyAccent(_ combiningChar: String) {
-        // Get the character before the cursor
-        guard let context = textDocumentProxy.documentContextBeforeInput,
-              let lastChar = context.last else {
-            // Nothing to combine with — insert accent literally
-            textDocumentProxy.insertText(combiningChar)
-            lastAction = .accentLiteral(combiningChar)
-            return
-        }
-
-        let base = String(lastChar)
-        // Try combining: base + combining character, then normalize to NFC
-        let combined = (base + combiningChar).precomposedStringWithCanonicalMapping
-
-        // If NFC normalization produced a single character, the combination is valid
-        if combined.count == 1 && combined != base {
-            // Replace: delete the base, insert the combined form
-            textDocumentProxy.deleteBackward()
-            textDocumentProxy.insertText(combined)
-            lastAction = .combined(base: base, accent: combiningChar, result: combined)
-        } else {
-            // No valid combination — insert the accent as a literal character
-            // Use a visible representation instead of the combining mark
-            let literal = literalForCombining(combiningChar)
-            textDocumentProxy.insertText(literal)
-            lastAction = .accentLiteral(literal)
-        }
+        let literal = literalForCombining(combiningChar)
+        textDocumentProxy.insertText(literal)
+        lastAction = .accentLiteral(literal)
     }
 
     /// Map combining characters to their standalone visible equivalents.
