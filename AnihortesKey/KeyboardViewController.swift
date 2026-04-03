@@ -37,7 +37,7 @@ class KeyboardViewController: UIInputViewController {
     private var lastAction: LastAction = .none
 
     private let keySpacing: CGFloat = 4
-    private let keyboardHeight: CGFloat = 300
+    private let keyboardHeight: CGFloat = 290
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -236,36 +236,37 @@ class KeyboardViewController: UIInputViewController {
         let numSideButtons: CGFloat = 4
 
         let availableHeight = totalHeight - padding - bottomPadding
-        let keySize = (availableHeight - (numKeyRows - 1) * keySpacing) / numKeyRows
+        let keyHeight = (availableHeight - (numKeyRows - 1) * keySpacing) / numKeyRows
+        let keyWidth = keyHeight * 163.0 / 158.0
 
-        let gridWidth = 3 * keySize + 2 * keySpacing
-        let sideWidth = keySize
+        let gridWidth = 3 * keyWidth + 2 * keySpacing
+        let sideWidth = keyWidth
 
         let gridLeft = padding
         let gridTop = padding
 
         for (rowIndex, row) in keyViews.enumerated() {
             for (colIndex, kv) in row.enumerated() {
-                let x = gridLeft + CGFloat(colIndex) * (keySize + keySpacing)
-                let y = gridTop + CGFloat(rowIndex) * (keySize + keySpacing)
-                kv.frame = CGRect(x: x, y: y, width: keySize, height: keySize)
+                let x = gridLeft + CGFloat(colIndex) * (keyWidth + keySpacing)
+                let y = gridTop + CGFloat(rowIndex) * (keyHeight + keySpacing)
+                kv.frame = CGRect(x: x, y: y, width: keyWidth, height: keyHeight)
             }
         }
 
-        let bottomY = gridTop + 3 * (keySize + keySpacing)
+        let bottomY = gridTop + 3 * (keyHeight + keySpacing)
 
         if isNumericMode, let zeroView = zeroKeyView {
-            let zeroWidth = 2 * keySize + keySpacing
-            zeroView.frame = CGRect(x: gridLeft, y: bottomY, width: zeroWidth, height: keySize)
+            let zeroWidth = 2 * keyWidth + keySpacing
+            zeroView.frame = CGRect(x: gridLeft, y: bottomY, width: zeroWidth, height: keyHeight)
             if let label = zeroView.subviews.first as? UILabel {
                 label.frame = zeroView.bounds
             }
             let spaceLeft = gridLeft + zeroWidth + keySpacing
             spaceBarView?.frame = CGRect(x: spaceLeft, y: bottomY,
-                                         width: keySize, height: keySize)
+                                         width: keyWidth, height: keyHeight)
         } else {
             spaceBarView?.frame = CGRect(x: gridLeft, y: bottomY,
-                                         width: gridWidth, height: keySize)
+                                         width: gridWidth, height: keyHeight)
         }
         if let label = spaceBarView?.subviews.first as? UILabel {
             label.frame = spaceBarView?.bounds ?? .zero
