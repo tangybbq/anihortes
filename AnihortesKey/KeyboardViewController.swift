@@ -37,7 +37,9 @@ class KeyboardViewController: UIInputViewController {
     private var lastAction: LastAction = .none
 
     private let keySpacing: CGFloat = 4
-    private let keyboardHeight: CGFloat = 290
+    private var keyboardHeight: CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 350 : 290
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
