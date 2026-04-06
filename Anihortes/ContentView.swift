@@ -25,31 +25,91 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showingLicense = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Anihortes Keyboard")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Anihortes Keyboard")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
 
-            Text("To enable the keyboard:")
-                .font(.headline)
+                Text("To enable the keyboard:")
+                    .font(.headline)
 
-            VStack(alignment: .leading, spacing: 12) {
-                InstructionRow(number: 1,
-                    text: "Open Settings → General → Keyboard → Keyboards")
-                InstructionRow(number: 2,
-                    text: "Tap \"Add New Keyboard...\"")
-                InstructionRow(number: 3,
-                    text: "Select \"Anihortes\" from the list")
-                InstructionRow(number: 4,
-                    text: "When typing, tap the globe key to switch to Anihortes")
+                VStack(alignment: .leading, spacing: 12) {
+                    InstructionRow(number: 1,
+                        text: "Open Settings → General → Keyboard → Keyboards")
+                    InstructionRow(number: 2,
+                        text: "Tap \"Add New Keyboard...\"")
+                    InstructionRow(number: 3,
+                        text: "Select \"Anihortes\" from the list")
+                    InstructionRow(number: 4,
+                        text: "When typing, tap the globe key to switch to Anihortes")
+                }
+
+                Text("The keyboard may not appear the first few times you try to select it. Once it begins to appear, it should work reliably.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Divider()
+                    .padding(.vertical, 8)
+
+                // About section
+                Text("About")
+                    .font(.headline)
+
+                Text("Copyright © 2026 David L. Brown, Jr.")
+                    .font(.subheadline)
+
+                Text("Anihortes is free software licensed under the GNU General Public License v3 (or later), with an additional permission allowing distribution through app stores.")
+                    .font(.subheadline)
+
+                Text("This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Button("View Full License") {
+                    showingLicense = true
+                }
+
+                Link("Source code on GitHub",
+                     destination: URL(string: "https://github.com/tangybbq/anihortes")!)
             }
-
-            Text("The keyboard may not appear the first few times you try to select it. Once it begins to appear, it should work reliably.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            .padding()
         }
-        .padding()
+        .sheet(isPresented: $showingLicense) {
+            LicenseView()
+        }
+    }
+}
+
+struct LicenseView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                Text(licenseText)
+                    .font(.system(.caption, design: .monospaced))
+                    .padding()
+            }
+            .navigationTitle("License")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var licenseText: String {
+        guard let url = Bundle.main.url(forResource: "LICENSE", withExtension: "txt"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else {
+            return "License text could not be loaded."
+        }
+        return text
     }
 }
 
