@@ -19,6 +19,7 @@ class KeyboardViewController: UIInputViewController {
     private var rightKeyViews: [[KeyView]] = []
     private var rightSpaceBarView: UIView?
     private var rightZeroKeyView: UIView?
+    private var rightSideButtons: [UIButton] = []
 
     private var isIPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
@@ -68,6 +69,9 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         globeButton.isHidden = !needsInputModeSwitchKey
+        if let rGlobe = rightSideButtons.first {
+            rGlobe.isHidden = !needsInputModeSwitchKey
+        }
         refreshAppearance()
     }
 
@@ -117,7 +121,7 @@ class KeyboardViewController: UIInputViewController {
 
         let buttonBg = isDark ? UIColor(white: 0.25, alpha: 1) : UIColor(white: 0.75, alpha: 1)
         let buttonTint = isDark ? UIColor.white : UIColor.label
-        for button in sideButtons {
+        for button in sideButtons + rightSideButtons {
             button.backgroundColor = buttonBg
             button.tintColor = buttonTint
         }
@@ -266,12 +270,29 @@ class KeyboardViewController: UIInputViewController {
         sideButtons = [globeButton, modeButton, backspaceButton, returnButton]
         for b in sideButtons { view.addSubview(b) }
 
-        // Right-side numeric grid (iPad only)
+        // Right-side numeric grid and buttons (iPad only)
+        rightSideButtons.removeAll()
         if isIPad {
             rightKeyViews = buildKeyGrid(from: KeyMap.numeric)
             let (rZero, rSpace) = buildZeroAndSpace()
             rightZeroKeyView = rZero
             rightSpaceBarView = rSpace
+
+            let rGlobe = makeSideButton(systemImage: "globe",
+                                        action: #selector(handleInputModeList(from:with:)),
+                                        forEvents: .allTouchEvents)
+            let rBackspace = makeSideButton(systemImage: "delete.left",
+                                            action: #selector(backspaceTapped))
+            let rBackspaceLong = UILongPressGestureRecognizer(target: self,
+                                                               action: #selector(backspaceLongPress(_:)))
+            rBackspaceLong.minimumPressDuration = 0.3
+            rBackspace.addGestureRecognizer(rBackspaceLong)
+            let rReturn = makeSideButton(systemImage: "return",
+                                         action: #selector(returnTapped))
+
+            rightSideButtons = [rGlobe, rBackspace, rReturn]
+            for b in rightSideButtons { view.addSubview(b) }
+            rGlobe.isHidden = true
         }
 
         // Don't check needsInputModeSwitchKey here — it's unreliable before
@@ -338,9 +359,11 @@ class KeyboardViewController: UIInputViewController {
             button.frame = CGRect(x: sideLeft, y: y, width: sideWidth, height: sideHeight)
         }
 
-        // Right-side numeric grid (iPad only)
+        // Right-side numeric grid (iPad only) — right-aligned against edge
         if isIPad, !rightKeyViews.isEmpty {
-            let rightGridLeft = sideLeft + sideWidth + keySpacing
+            let rightGridRight = totalWidth - padding
+            let rightGridWidth = 3 * keyWidth + 2 * keySpacing
+            let rightGridLeft = rightGridRight - rightGridWidth
 
             for (rowIndex, row) in rightKeyViews.enumerated() {
                 for (colIndex, kv) in row.enumerated() {
@@ -364,6 +387,16 @@ class KeyboardViewController: UIInputViewController {
             }
             if let label = rightSpaceBarView?.subviews.first as? UILabel {
                 label.frame = rightSpaceBarView?.bounds ?? .zero
+            }
+
+            // Right-side buttons — to the left of the right grid
+            let rSideLeft = rightGridLeft - keySpacing - sideWidth
+            let rNumButtons = CGFloat(rightSideButtons.count)
+            let rSideHeight = (availableHeight - (rNumButtons - 1) * keySpacing) / rNumButtons
+
+            for (index, button) in rightSideButtons.enumerated() {
+                let y = padding + CGFloat(index) * (rSideHeight + keySpacing)
+                button.frame = CGRect(x: rSideLeft, y: y, width: sideWidth, height: rSideHeight)
             }
         }
     }
