@@ -75,7 +75,7 @@ class KeyView: UIView {
             guard !text.isEmpty else { continue }
             let label = UILabel()
             label.text = text
-            label.font = UIFont.systemFont(ofSize: 10, weight: .light)
+            label.font = UIFont.systemFont(ofSize: 16, weight: .light)
             label.textColor = .secondaryLabel
             label.textAlignment = .center
             label.translatesAutoresizingMaskIntoConstraints = false
