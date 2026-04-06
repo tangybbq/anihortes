@@ -15,3 +15,15 @@ replacement for the keyboard.  Anihortes is named after the order of the keys on
 This is not intended to replace MessagEase's implementation, and will be removed if they decide to
 continue development. But, I'm offering this so that those who have come to love this keyboard will
 be able to continue to use it, even with the official app no longer working.
+
+# Installing
+
+As I am not a paid developer, anyone wanting to use this keyboard will have to build it themselves.
+This can be done with XCode, and the user's device placed into developer mode, which will allow the
+application to be accepted by the device.
+
+Once it has been run once (the app itself just prints a hello message), a new keyboard should be
+able in settings.
+
+I have found that the keyboard does not come up the first few times I try to select it. I'm not sure
+what the issue here is. Once it does begin to appear, it seems to work reliably.
