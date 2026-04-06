@@ -11,13 +11,13 @@ class KeyboardViewController: UIInputViewController {
 
     private var keyViews: [[KeyView]] = []
     private var sideButtons: [UIButton] = []
-    private var spaceBarView: UIView?
+    private var spaceBarView: SpaceBarView?
     private var zeroKeyView: UIView?
     private var isNumericMode = false
 
     // Right-side numeric grid (iPad only)
     private var rightKeyViews: [[KeyView]] = []
-    private var rightSpaceBarView: UIView?
+    private var rightSpaceBarView: SpaceBarView?
     private var rightZeroKeyView: UIView?
     private var rightSideButtons: [UIButton] = []
 
@@ -99,21 +99,14 @@ class KeyboardViewController: UIInputViewController {
     private func updateBarAppearance(isDark: Bool) {
         let bg = isDark ? UIColor(white: 0.35, alpha: 1) : UIColor.white
         let textColor = isDark ? UIColor.white : UIColor.black
-        let secondaryText = isDark ? UIColor(white: 0.75, alpha: 1) : UIColor.secondaryLabel
 
-        spaceBarView?.backgroundColor = bg
-        if let label = spaceBarView?.subviews.first as? UILabel {
-            label.textColor = secondaryText
-        }
+        spaceBarView?.updateAppearance(isDark: isDark)
         zeroKeyView?.backgroundColor = bg
         if let label = zeroKeyView?.subviews.first as? UILabel {
             label.textColor = textColor
         }
 
-        rightSpaceBarView?.backgroundColor = bg
-        if let label = rightSpaceBarView?.subviews.first as? UILabel {
-            label.textColor = secondaryText
-        }
+        rightSpaceBarView?.updateAppearance(isDark: isDark)
         rightZeroKeyView?.backgroundColor = bg
         if let label = rightZeroKeyView?.subviews.first as? UILabel {
             label.textColor = textColor
@@ -186,7 +179,7 @@ class KeyboardViewController: UIInputViewController {
         return grid
     }
 
-    private func buildZeroAndSpace() -> (zero: UIView, space: UIView) {
+    private func buildZeroAndSpace() -> (zero: UIView, space: SpaceBarView) {
         let zeroView = UIView()
         zeroView.backgroundColor = .white
         zeroView.layer.cornerRadius = 6
@@ -201,21 +194,18 @@ class KeyboardViewController: UIInputViewController {
         zeroView.addGestureRecognizer(zeroTap)
         view.addSubview(zeroView)
 
-        let bar = UIView()
-        bar.backgroundColor = .white
-        bar.layer.cornerRadius = 6
-        bar.clipsToBounds = true
-        let label = UILabel()
-        label.text = "space"
-        label.font = UIFont.systemFont(ofSize: 16, weight: .regular)
-        label.textColor = .secondaryLabel
-        label.textAlignment = .center
-        bar.addSubview(label)
-        let tap = UITapGestureRecognizer(target: self, action: #selector(spaceTapped))
-        bar.addGestureRecognizer(tap)
+        let bar = buildSpaceBar()
         view.addSubview(bar)
 
         return (zeroView, bar)
+    }
+
+    private func buildSpaceBar() -> SpaceBarView {
+        let bar = SpaceBarView()
+        bar.onGesture = { [weak self] result in
+            self?.handleSpaceBarGesture(result)
+        }
+        return bar
     }
 
     private func buildKeyboard() {
@@ -236,18 +226,7 @@ class KeyboardViewController: UIInputViewController {
             zeroKeyView = zero
             spaceBarView = space
         } else {
-            let bar = UIView()
-            bar.backgroundColor = .white
-            bar.layer.cornerRadius = 6
-            bar.clipsToBounds = true
-            let label = UILabel()
-            label.text = "space"
-            label.font = UIFont.systemFont(ofSize: 16, weight: .regular)
-            label.textColor = .secondaryLabel
-            label.textAlignment = .center
-            bar.addSubview(label)
-            let tap = UITapGestureRecognizer(target: self, action: #selector(spaceTapped))
-            bar.addGestureRecognizer(tap)
+            let bar = buildSpaceBar()
             view.addSubview(bar)
             spaceBarView = bar
         }
@@ -347,9 +326,7 @@ class KeyboardViewController: UIInputViewController {
             spaceBarView?.frame = CGRect(x: gridLeft, y: bottomY,
                                          width: gridWidth, height: keyHeight)
         }
-        if let label = spaceBarView?.subviews.first as? UILabel {
-            label.frame = spaceBarView?.bounds ?? .zero
-        }
+        spaceBarView?.dragThreshold = keyWidth * 0.25
 
         let sideLeft = gridLeft + gridWidth + keySpacing
         let sideHeight = (availableHeight - (numSideButtons - 1) * keySpacing) / numSideButtons
@@ -385,9 +362,7 @@ class KeyboardViewController: UIInputViewController {
                 rightSpaceBarView?.frame = CGRect(x: rSpaceLeft, y: rBottomY,
                                                    width: keyWidth, height: keyHeight)
             }
-            if let label = rightSpaceBarView?.subviews.first as? UILabel {
-                label.frame = rightSpaceBarView?.bounds ?? .zero
-            }
+            rightSpaceBarView?.dragThreshold = keyWidth * 0.25
 
             // Right-side buttons — to the left of the right grid
             let rSideLeft = rightGridLeft - keySpacing - sideWidth
@@ -464,10 +439,54 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Actions
 
-    @objc private func spaceTapped() {
-        textDocumentProxy.insertText(" ")
-        lastAction = .character(" ")
+    private func handleSpaceBarGesture(_ result: SpaceBarResult) {
+        switch result {
+        case .tap:
+            textDocumentProxy.insertText(" ")
+            lastAction = .character(" ")
+        case .cursorLeft:
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
+            lastAction = .none
+        case .cursorRight:
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
+            lastAction = .none
+        case .wordLeft:
+            moveCursorWordLeft()
+            lastAction = .none
+        case .wordRight:
+            moveCursorWordRight()
+            lastAction = .none
+        }
         updateKeyLabelsCase()
+    }
+
+    private func moveCursorWordLeft() {
+        guard let context = textDocumentProxy.documentContextBeforeInput,
+              !context.isEmpty else { return }
+        let chars = Array(context)
+        var i = chars.count - 1
+        // Skip whitespace
+        while i >= 0 && chars[i].isWhitespace { i -= 1 }
+        // Skip word characters
+        while i >= 0 && !chars[i].isWhitespace { i -= 1 }
+        let offset = chars.count - (i + 1)
+        if offset > 0 {
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: -offset)
+        }
+    }
+
+    private func moveCursorWordRight() {
+        guard let context = textDocumentProxy.documentContextAfterInput,
+              !context.isEmpty else { return }
+        let chars = Array(context)
+        var i = 0
+        // Skip whitespace
+        while i < chars.count && chars[i].isWhitespace { i += 1 }
+        // Skip word characters
+        while i < chars.count && !chars[i].isWhitespace { i += 1 }
+        if i > 0 {
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: i)
+        }
     }
 
     @objc private func zeroTapped() {
