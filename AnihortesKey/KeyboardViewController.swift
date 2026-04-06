@@ -15,6 +15,15 @@ class KeyboardViewController: UIInputViewController {
     private var zeroKeyView: UIView?
     private var isNumericMode = false
 
+    // Right-side numeric grid (iPad only)
+    private var rightKeyViews: [[KeyView]] = []
+    private var rightSpaceBarView: UIView?
+    private var rightZeroKeyView: UIView?
+
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     // Side button references
     private var globeButton: UIButton!
     private var modeButton: UIButton!
@@ -38,7 +47,7 @@ class KeyboardViewController: UIInputViewController {
 
     private let keySpacing: CGFloat = 4
     private var keyboardHeight: CGFloat {
-        UIDevice.current.userInterfaceIdiom == .pad ? 350 : 290
+        isIPad ? 350 : 290
     }
 
     override func viewDidLoad() {
@@ -76,6 +85,9 @@ class KeyboardViewController: UIInputViewController {
         for row in keyViews {
             for kv in row { kv.updateAppearance(isDark: isDark) }
         }
+        for row in rightKeyViews {
+            for kv in row { kv.updateAppearance(isDark: isDark) }
+        }
         updateBarAppearance(isDark: isDark)
         updateKeyLabelsCase()
     }
@@ -91,6 +103,15 @@ class KeyboardViewController: UIInputViewController {
         }
         zeroKeyView?.backgroundColor = bg
         if let label = zeroKeyView?.subviews.first as? UILabel {
+            label.textColor = textColor
+        }
+
+        rightSpaceBarView?.backgroundColor = bg
+        if let label = rightSpaceBarView?.subviews.first as? UILabel {
+            label.textColor = secondaryText
+        }
+        rightZeroKeyView?.backgroundColor = bg
+        if let label = rightZeroKeyView?.subviews.first as? UILabel {
             label.textColor = textColor
         }
 
@@ -144,16 +165,11 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Build Keyboard
 
-    private func buildKeyboard() {
-        view.subviews.forEach { $0.removeFromSuperview() }
-        keyViews.removeAll()
-        sideButtons.removeAll()
-
-        let layout = isNumericMode ? KeyMap.numeric : KeyMap.alpha
-
-        for (_, rowDefs) in layout.enumerated() {
+    private func buildKeyGrid(from layout: [[KeyDefinition]]) -> [[KeyView]] {
+        var grid: [[KeyView]] = []
+        for rowDefs in layout {
             var rowKeyViews: [KeyView] = []
-            for (_, keyDef) in rowDefs.enumerated() {
+            for keyDef in rowDefs {
                 let kv = KeyView(definition: keyDef)
                 kv.onGesture = { [weak self] keyView, result in
                     self?.handleKeyGesture(keyView: keyView, result: result)
@@ -161,29 +177,25 @@ class KeyboardViewController: UIInputViewController {
                 view.addSubview(kv)
                 rowKeyViews.append(kv)
             }
-            keyViews.append(rowKeyViews)
+            grid.append(rowKeyViews)
         }
+        return grid
+    }
 
-        // Spacebar and zero key
-        zeroKeyView?.removeFromSuperview()
-        zeroKeyView = nil
-
-        if isNumericMode {
-            let zeroView = UIView()
-            zeroView.backgroundColor = .white
-            zeroView.layer.cornerRadius = 6
-            zeroView.clipsToBounds = true
-            let zeroLabel = UILabel()
-            zeroLabel.text = "0"
-            zeroLabel.font = UIFont.systemFont(ofSize: 22, weight: .regular)
-            zeroLabel.textColor = .black
-            zeroLabel.textAlignment = .center
-            zeroView.addSubview(zeroLabel)
-            let zeroTap = UITapGestureRecognizer(target: self, action: #selector(zeroTapped))
-            zeroView.addGestureRecognizer(zeroTap)
-            view.addSubview(zeroView)
-            zeroKeyView = zeroView
-        }
+    private func buildZeroAndSpace() -> (zero: UIView, space: UIView) {
+        let zeroView = UIView()
+        zeroView.backgroundColor = .white
+        zeroView.layer.cornerRadius = 6
+        zeroView.clipsToBounds = true
+        let zeroLabel = UILabel()
+        zeroLabel.text = "0"
+        zeroLabel.font = UIFont.systemFont(ofSize: 22, weight: .regular)
+        zeroLabel.textColor = .black
+        zeroLabel.textAlignment = .center
+        zeroView.addSubview(zeroLabel)
+        let zeroTap = UITapGestureRecognizer(target: self, action: #selector(zeroTapped))
+        zeroView.addGestureRecognizer(zeroTap)
+        view.addSubview(zeroView)
 
         let bar = UIView()
         bar.backgroundColor = .white
@@ -198,7 +210,43 @@ class KeyboardViewController: UIInputViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(spaceTapped))
         bar.addGestureRecognizer(tap)
         view.addSubview(bar)
-        spaceBarView = bar
+
+        return (zeroView, bar)
+    }
+
+    private func buildKeyboard() {
+        view.subviews.forEach { $0.removeFromSuperview() }
+        keyViews.removeAll()
+        sideButtons.removeAll()
+        rightKeyViews.removeAll()
+        rightSpaceBarView = nil
+        rightZeroKeyView = nil
+
+        let layout = isNumericMode ? KeyMap.numeric : KeyMap.alpha
+        keyViews = buildKeyGrid(from: layout)
+
+        // Bottom row: zero key (numeric mode only) and spacebar
+        zeroKeyView = nil
+        if isNumericMode {
+            let (zero, space) = buildZeroAndSpace()
+            zeroKeyView = zero
+            spaceBarView = space
+        } else {
+            let bar = UIView()
+            bar.backgroundColor = .white
+            bar.layer.cornerRadius = 6
+            bar.clipsToBounds = true
+            let label = UILabel()
+            label.text = "space"
+            label.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+            label.textColor = .secondaryLabel
+            label.textAlignment = .center
+            bar.addSubview(label)
+            let tap = UITapGestureRecognizer(target: self, action: #selector(spaceTapped))
+            bar.addGestureRecognizer(tap)
+            view.addSubview(bar)
+            spaceBarView = bar
+        }
 
         // Side buttons
         globeButton = makeSideButton(systemImage: "globe",
@@ -217,6 +265,14 @@ class KeyboardViewController: UIInputViewController {
 
         sideButtons = [globeButton, modeButton, backspaceButton, returnButton]
         for b in sideButtons { view.addSubview(b) }
+
+        // Right-side numeric grid (iPad only)
+        if isIPad {
+            rightKeyViews = buildKeyGrid(from: KeyMap.numeric)
+            let (rZero, rSpace) = buildZeroAndSpace()
+            rightZeroKeyView = rZero
+            rightSpaceBarView = rSpace
+        }
 
         // Don't check needsInputModeSwitchKey here — it's unreliable before
         // the host connection is established. Hide by default; viewDidAppear
@@ -280,6 +336,35 @@ class KeyboardViewController: UIInputViewController {
         for (index, button) in sideButtons.enumerated() {
             let y = padding + CGFloat(index) * (sideHeight + keySpacing)
             button.frame = CGRect(x: sideLeft, y: y, width: sideWidth, height: sideHeight)
+        }
+
+        // Right-side numeric grid (iPad only)
+        if isIPad, !rightKeyViews.isEmpty {
+            let rightGridLeft = sideLeft + sideWidth + keySpacing
+
+            for (rowIndex, row) in rightKeyViews.enumerated() {
+                for (colIndex, kv) in row.enumerated() {
+                    let x = rightGridLeft + CGFloat(colIndex) * (keyWidth + keySpacing)
+                    let y = gridTop + CGFloat(rowIndex) * (keyHeight + keySpacing)
+                    kv.frame = CGRect(x: x, y: y, width: keyWidth, height: keyHeight)
+                }
+            }
+
+            let rBottomY = gridTop + 3 * (keyHeight + keySpacing)
+            if let rZero = rightZeroKeyView {
+                let zeroWidth = 2 * keyWidth + keySpacing
+                rZero.frame = CGRect(x: rightGridLeft, y: rBottomY,
+                                     width: zeroWidth, height: keyHeight)
+                if let label = rZero.subviews.first as? UILabel {
+                    label.frame = rZero.bounds
+                }
+                let rSpaceLeft = rightGridLeft + zeroWidth + keySpacing
+                rightSpaceBarView?.frame = CGRect(x: rSpaceLeft, y: rBottomY,
+                                                   width: keyWidth, height: keyHeight)
+            }
+            if let label = rightSpaceBarView?.subviews.first as? UILabel {
+                label.frame = rightSpaceBarView?.bounds ?? .zero
+            }
         }
     }
 
