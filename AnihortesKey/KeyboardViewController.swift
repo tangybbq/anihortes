@@ -343,7 +343,7 @@ class KeyboardViewController: UIInputViewController {
             spaceBarView?.frame = CGRect(x: gridLeft, y: bottomY,
                                          width: gridWidth, height: keyHeight)
         }
-        spaceBarView?.dragThreshold = keyWidth * 0.25
+        spaceBarView?.dragThreshold = keyWidth * KeyView.dragThresholdFraction
 
         let sideLeft = gridLeft + gridWidth + keySpacing
         let sideHeight = (availableHeight - (numSideButtons - 1) * keySpacing) / numSideButtons
@@ -379,7 +379,7 @@ class KeyboardViewController: UIInputViewController {
                 rightSpaceBarView?.frame = CGRect(x: rSpaceLeft, y: rBottomY,
                                                    width: keyWidth, height: keyHeight)
             }
-            rightSpaceBarView?.dragThreshold = keyWidth * 0.25
+            rightSpaceBarView?.dragThreshold = keyWidth * KeyView.dragThresholdFraction
 
             // Right-side buttons — to the left of the right grid
             let rSideLeft = rightGridLeft - keySpacing - sideWidth

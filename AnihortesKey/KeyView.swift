@@ -40,8 +40,10 @@ class KeyView: UIView {
     let definition: KeyDefinition
     var onGesture: KeyGestureHandler?
 
-    /// Drag threshold as fraction of key size. Default 0.25 (1/4 key width).
-    var dragThresholdFraction: CGFloat = 0.25
+    /// Drag threshold as fraction of key size. A touch must move at least
+    /// this fraction of the key's width before it registers as a swipe
+    /// rather than a tap.
+    static let dragThresholdFraction: CGFloat = 0.5
 
     private let centerLabel = UILabel()
     private var hintLabels: [SwipeDirection: UILabel] = [:]
@@ -121,7 +123,7 @@ class KeyView: UIView {
             [weak self] _ in
             guard let self else { return }
             // Only fire if finger hasn't moved significantly
-            if self.touchMaxDistance < self.bounds.width * self.dragThresholdFraction {
+            if self.touchMaxDistance < self.bounds.width * Self.dragThresholdFraction {
                 self.didFireLongPress = true
                 self.onGesture?(self, .longPress)
             }
@@ -137,7 +139,7 @@ class KeyView: UIView {
             touchMaxDistance = dist
         }
         // Cancel long-press if finger moved too far
-        let threshold = bounds.width * dragThresholdFraction
+        let threshold = bounds.width * Self.dragThresholdFraction
         if dist >= threshold {
             longPressTimer?.invalidate()
             longPressTimer = nil
@@ -180,7 +182,7 @@ class KeyView: UIView {
     }
 
     private func classifyGesture(endPoint: CGPoint) -> KeyGestureResult {
-        let threshold = bounds.width * dragThresholdFraction
+        let threshold = bounds.width * Self.dragThresholdFraction
         let dx = endPoint.x - touchStart.x
         let dy = endPoint.y - touchStart.y
         let endDistance = distance(from: touchStart, to: endPoint)
